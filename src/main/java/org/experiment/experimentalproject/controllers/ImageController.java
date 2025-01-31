@@ -1,16 +1,22 @@
 package org.experiment.experimentalproject.controllers;
 
+import lombok.AllArgsConstructor;
 import org.apache.coyote.BadRequestException;
+import org.experiment.experimentalproject.client.AzureImageStorageClient;
+import org.experiment.experimentalproject.client.ImageStorageClient;
 import org.experiment.experimentalproject.entities.Image;
 import org.experiment.experimentalproject.service.ImageService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.xml.transform.Result;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,6 +29,8 @@ public class ImageController {
 
     @Autowired
     private ImageService imageService;
+    @Autowired
+    private ImageStorageClient imageStorageClient;
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
@@ -63,5 +71,13 @@ public class ImageController {
     @GetMapping
     public ResponseEntity<?> listImages() {
         return ResponseEntity.ok().body(imageService.getAllImages());
+    }
+
+    @PostMapping("/download")
+    public ResponseEntity<?> downloadImage(@RequestParam String containerName, @RequestParam MultipartFile file) throws IOException {
+        try(InputStream inputStream = file.getInputStream()) {
+            String imageUrl = this.imageStorageClient.downloadImage(containerName, file.getOriginalFilename(), inputStream, file.getSize());
+            return ResponseEntity.ok().body(imageUrl);
+        }
     }
 }
